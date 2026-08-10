@@ -25,6 +25,7 @@ All notable changes to SpotifyControl are documented here.
 - Prevented older overlapping refreshes from replacing newer UI state
 - Prevented stale volume writes from winning over the latest slider value
 - Prevented duplicate widget processes with an automatic process lock
+- Expanded window dragging to every non-interactive area of the overlay
 
 ### Changed
 

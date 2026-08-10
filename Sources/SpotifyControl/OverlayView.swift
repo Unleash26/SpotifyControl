@@ -7,17 +7,17 @@ struct OverlayView: View {
 
     var body: some View {
         ZStack {
+            PanelBackground()
+                .allowsHitTesting(false)
+
             HStack(spacing: 10) {
                 ArtworkView(url: model.snapshot.artworkURL, state: model.snapshot.state)
 
                 VStack(alignment: .leading, spacing: 7) {
                     HeaderView(snapshot: model.snapshot)
 
-                    HStack(spacing: 10) {
-                        TransportControls(model: model)
-                        Spacer(minLength: 4)
-                        VolumeControl(model: model)
-                    }
+                    PlayerControls(model: model)
+                        .hidden()
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -25,7 +25,33 @@ struct OverlayView: View {
             .padding(.trailing, 10)
             .padding(.vertical, 10)
             .frame(width: OverlayLayout.width, height: OverlayLayout.height)
-            .background(PanelBackground())
+            .allowsHitTesting(false)
+
+            WindowDragRegion(
+                onOpenSpotify: model.openSpotify,
+                onOpenAutomationSettings: model.openAutomationSettings,
+                onQuit: { NSApp.terminate(nil) }
+            )
+            .frame(width: OverlayLayout.width, height: OverlayLayout.height)
+
+            HStack(spacing: 10) {
+                Color.clear
+                    .frame(width: OverlayLayout.artworkSize, height: OverlayLayout.artworkSize)
+                    .allowsHitTesting(false)
+
+                VStack(alignment: .leading, spacing: 7) {
+                    HeaderView(snapshot: model.snapshot)
+                        .hidden()
+                        .allowsHitTesting(false)
+
+                    PlayerControls(model: model)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.leading, 11)
+            .padding(.trailing, 10)
+            .padding(.vertical, 10)
+            .frame(width: OverlayLayout.width, height: OverlayLayout.height)
             .overlay(alignment: .topTrailing) {
                 QuitButton()
                     .opacity(isHovering ? 1 : 0.52)
@@ -33,26 +59,20 @@ struct OverlayView: View {
             }
         }
         .frame(width: OverlayLayout.windowWidth, height: OverlayLayout.windowHeight)
-        .overlay(alignment: .topLeading) {
-            WindowDragRegion()
-                .frame(width: 190, height: 20)
-                .padding(.leading, 86)
-                .padding(.top, 2)
-        }
         .onHover { isHovering = $0 }
-        .contextMenu {
-            Button("Spotifyを開く") {
-                model.openSpotify()
-            }
-            Button("オートメーション設定を開く") {
-                model.openAutomationSettings()
-            }
-            Divider()
-            Button("SpotifyControlを終了") {
-                NSApp.terminate(nil)
-            }
-        }
         .preferredColorScheme(.dark)
+    }
+}
+
+private struct PlayerControls: View {
+    @ObservedObject var model: PlayerModel
+
+    var body: some View {
+        HStack(spacing: 10) {
+            TransportControls(model: model)
+            Spacer(minLength: 4)
+            VolumeControl(model: model)
+        }
     }
 }
 
@@ -234,6 +254,7 @@ private struct VolumeControl: View {
                 .font(.system(size: 9, weight: .medium))
                 .foregroundStyle(Color.panelSecondaryText)
                 .frame(width: 13)
+                .allowsHitTesting(false)
 
             CompactVolumeSlider(model: model)
 
@@ -242,6 +263,7 @@ private struct VolumeControl: View {
                 .foregroundStyle(Color.panelSecondaryText)
                 .monospacedDigit()
                 .frame(width: 18, alignment: .trailing)
+                .allowsHitTesting(false)
         }
     }
 }

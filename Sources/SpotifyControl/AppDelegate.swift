@@ -98,26 +98,58 @@ final class OverlayPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 
-struct WindowDragRegion: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        let view = WindowDragView()
-        view.setAccessibilityElement(false)
-        return view
-    }
+struct WindowDragRegion: View {
+    var onOpenSpotify: () -> Void
+    var onOpenAutomationSettings: () -> Void
+    var onQuit: () -> Void
+    @State private var dragStartWindowOrigin: NSPoint?
 
-    func updateNSView(_ view: NSView, context: Context) {}
+    var body: some View {
+        Color.clear
+            .contentShape(WindowDragHitShape(), eoFill: true)
+            .gesture(
+                DragGesture(minimumDistance: 1)
+                    .onChanged { value in
+                        guard let panel = NSApp.windows.first(where: { $0 is OverlayPanel }) else { return }
+                        if dragStartWindowOrigin == nil {
+                            dragStartWindowOrigin = panel.frame.origin
+                        }
+                        guard let dragStartWindowOrigin else { return }
+                        panel.setFrameOrigin(
+                            NSPoint(
+                                x: dragStartWindowOrigin.x + value.translation.width,
+                                y: dragStartWindowOrigin.y - value.translation.height
+                            )
+                        )
+                    }
+                    .onEnded { _ in
+                        dragStartWindowOrigin = nil
+                    }
+            )
+            .contextMenu {
+                Button("Spotifyを開く", action: onOpenSpotify)
+                Button("オートメーション設定を開く", action: onOpenAutomationSettings)
+                Divider()
+                Button("SpotifyControlを終了", action: onQuit)
+            }
+            .accessibilityHidden(true)
+    }
 }
 
-private final class WindowDragView: NSView {
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
-        true
-    }
+private struct WindowDragHitShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.addRect(rect)
 
-    override func mouseDown(with event: NSEvent) {
-        window?.performDrag(with: event)
-    }
-
-    override func resetCursorRects() {
-        addCursorRect(bounds, cursor: .openHand)
+        // These holes match the fixed transport, slider, and quit hit targets.
+        path.addEllipse(in: CGRect(x: 77, y: 59, width: 26, height: 26))
+        path.addEllipse(in: CGRect(x: 106, y: 56, width: 32, height: 32))
+        path.addEllipse(in: CGRect(x: 142, y: 59, width: 26, height: 26))
+        path.addRoundedRect(
+            in: CGRect(x: 227, y: 58, width: 59, height: 28),
+            cornerSize: CGSize(width: 14, height: 14)
+        )
+        path.addEllipse(in: CGRect(x: 285, y: 5, width: 28, height: 28))
+        return path
     }
 }
