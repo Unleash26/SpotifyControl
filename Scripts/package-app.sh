@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIGURATION="${1:-release}"
+BUILD_DIR="$ROOT_DIR/build"
+APP_DIR="$BUILD_DIR/SpotifyControl.app"
+CONTENTS_DIR="$APP_DIR/Contents"
+MACOS_DIR="$CONTENTS_DIR/MacOS"
+
+case "$CONFIGURATION" in
+  debug|release) ;;
+  *)
+    echo "Usage: $0 [debug|release]" >&2
+    exit 64
+    ;;
+esac
+
+cd "$ROOT_DIR"
+
+swift build -c "$CONFIGURATION" >/dev/null
+BIN_DIR="$(swift build -c "$CONFIGURATION" --show-bin-path)"
+EXECUTABLE="$BIN_DIR/SpotifyControl"
+
+if [[ ! -x "$EXECUTABLE" ]]; then
+  echo "Built executable not found: $EXECUTABLE" >&2
+  exit 1
+fi
+
+rm -rf "$APP_DIR"
+mkdir -p "$MACOS_DIR"
+
+cp "$EXECUTABLE" "$MACOS_DIR/SpotifyControl"
+cp "$ROOT_DIR/Supporting/Info.plist" "$CONTENTS_DIR/Info.plist"
+chmod +x "$MACOS_DIR/SpotifyControl"
+
+if [[ "$CONFIGURATION" == "release" ]]; then
+  /usr/bin/strip -S "$MACOS_DIR/SpotifyControl"
+fi
+
+/usr/bin/plutil -lint "$CONTENTS_DIR/Info.plist" >/dev/null
+/usr/bin/codesign --force --deep --sign - "$APP_DIR"
+/usr/bin/codesign --verify --deep --strict "$APP_DIR"
+
+echo "$APP_DIR"
