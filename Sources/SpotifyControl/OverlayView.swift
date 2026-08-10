@@ -313,31 +313,6 @@ private struct PanelBackground: View {
                 )
                 .blendMode(.screen)
 
-            RoundedRectangle(cornerRadius: OverlayLayout.cornerRadius, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            .white.opacity(0.50),
-                            .white.opacity(0.12),
-                            .black.opacity(0.10)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-
-            VStack {
-                HStack {
-                    Capsule()
-                        .fill(Color.white.opacity(0.34))
-                        .frame(width: 116, height: 1)
-                        .offset(x: 28, y: 6)
-                    Spacer()
-                }
-                Spacer()
-            }
-
         }
         .frame(width: OverlayLayout.width, height: OverlayLayout.height)
         .clipShape(RoundedRectangle(cornerRadius: OverlayLayout.cornerRadius, style: .continuous))

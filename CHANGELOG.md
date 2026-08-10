@@ -17,6 +17,7 @@ All notable changes to SpotifyControl are documented here.
 ### Fixed
 
 - Removed the rectangular `NSPanel` shadow visible around rounded corners
+- Removed decorative highlight lines that could be mistaken for progress controls
 - Propagated playback and volume command failures instead of silently ignoring them
 - Launching Spotify from Play now resumes playback after launch
 - Prevented older overlapping refreshes from replacing newer UI state
