@@ -235,23 +235,7 @@ private struct VolumeControl: View {
                 .foregroundStyle(Color.panelSecondaryText)
                 .frame(width: 13)
 
-            Slider(
-                value: Binding(
-                    get: { model.volume },
-                    set: { model.setVolume($0, isEditing: true) }
-                ),
-                in: 0...100,
-                step: 1,
-                onEditingChanged: { editing in
-                    model.setVolume(model.volume, isEditing: editing)
-                }
-            )
-            .controlSize(.small)
-            .tint(.spotifyGreen)
-            .frame(width: 54)
-            .accessibilityLabel("Spotifyの音量")
-            .accessibilityValue("\(Int(model.volume.rounded()))パーセント")
-            .disabled(!model.snapshot.state.canControlTrack)
+            CompactVolumeSlider(model: model)
 
             Text("\(Int(model.volume.rounded()))")
                 .font(.system(size: 9, weight: .semibold, design: .rounded))
@@ -259,6 +243,67 @@ private struct VolumeControl: View {
                 .monospacedDigit()
                 .frame(width: 18, alignment: .trailing)
         }
+    }
+}
+
+private struct CompactVolumeSlider: View {
+    @ObservedObject var model: PlayerModel
+
+    private let thumbSize: CGFloat = 10
+
+    var body: some View {
+        GeometryReader { geometry in
+            let usableWidth = max(0, geometry.size.width - thumbSize)
+            let fraction = min(1, max(0, model.volume / 100))
+            let thumbOffset = usableWidth * fraction
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.white.opacity(0.16))
+                    .frame(width: usableWidth, height: 3)
+                    .offset(x: thumbSize / 2)
+
+                Capsule()
+                    .fill(Color.spotifyGreen)
+                    .frame(width: thumbOffset, height: 3)
+                    .offset(x: thumbSize / 2)
+
+                Circle()
+                    .fill(Color.panelText)
+                    .frame(width: thumbSize, height: thumbSize)
+                    .shadow(color: .black.opacity(0.22), radius: 2, y: 1)
+                    .offset(x: thumbOffset)
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { updateVolume(at: $0.location.x, width: geometry.size.width, isEditing: true) }
+                    .onEnded { updateVolume(at: $0.location.x, width: geometry.size.width, isEditing: false) }
+            )
+        }
+        .frame(width: 54, height: 22)
+        .opacity(model.snapshot.state.canControlTrack ? 1 : 0.30)
+        .allowsHitTesting(model.snapshot.state.canControlTrack)
+        .accessibilityElement()
+        .accessibilityLabel("Spotifyの音量")
+        .accessibilityValue("\(Int(model.volume.rounded()))パーセント")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment:
+                model.setVolume(min(100, model.volume + 1), isEditing: false)
+            case .decrement:
+                model.setVolume(max(0, model.volume - 1), isEditing: false)
+            @unknown default:
+                break
+            }
+        }
+    }
+
+    private func updateVolume(at location: CGFloat, width: CGFloat, isEditing: Bool) {
+        let usableWidth = max(1, width - thumbSize)
+        let position = min(usableWidth, max(0, location - thumbSize / 2))
+        model.setVolume((position / usableWidth) * 100, isEditing: isEditing)
     }
 }
 
