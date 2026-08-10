@@ -7,8 +7,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var panel: OverlayPanel?
     private let playerModel = PlayerModel()
+    private let singleInstanceGuard = SingleInstanceGuard()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard singleInstanceGuard.acquire() else {
+            activateExistingInstance()
+            NSApp.terminate(nil)
+            return
+        }
+
         NSApp.setActivationPolicy(.accessory)
         showOverlay()
         playerModel.start()
@@ -16,6 +23,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         playerModel.stop()
+        singleInstanceGuard.release()
+    }
+
+    private func activateExistingInstance() {
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return }
+        let currentProcessIdentifier = ProcessInfo.processInfo.processIdentifier
+
+        NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier)
+            .first { $0.processIdentifier != currentProcessIdentifier }?
+            .activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
     }
 
     private func showOverlay() {

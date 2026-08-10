@@ -7,6 +7,7 @@ BUILD_DIR="$ROOT_DIR/build"
 APP_DIR="$BUILD_DIR/SpotifyControl.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
+RESOURCES_DIR="$CONTENTS_DIR/Resources"
 
 case "$CONFIGURATION" in
   debug|release) ;;
@@ -28,10 +29,11 @@ if [[ ! -x "$EXECUTABLE" ]]; then
 fi
 
 rm -rf "$APP_DIR"
-mkdir -p "$MACOS_DIR"
+mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 cp "$EXECUTABLE" "$MACOS_DIR/SpotifyControl"
 cp "$ROOT_DIR/Supporting/Info.plist" "$CONTENTS_DIR/Info.plist"
+cp "$ROOT_DIR/Supporting/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
 chmod +x "$MACOS_DIR/SpotifyControl"
 
 if [[ "$CONFIGURATION" == "release" ]]; then

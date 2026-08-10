@@ -11,6 +11,7 @@ All notable changes to SpotifyControl are documented here.
 - Friendly Automation permission guidance
 - Right-click menu for Spotify, Automation settings, and Quit
 - Unit tests and GitHub Actions CI
+- Original green visualizer application icon
 - Strict local app signature verification
 - Three-second Apple Event timeout and serialized main-thread execution
 
@@ -23,6 +24,7 @@ All notable changes to SpotifyControl are documented here.
 - Launching Spotify from Play now resumes playback after launch
 - Prevented older overlapping refreshes from replacing newer UI state
 - Prevented stale volume writes from winning over the latest slider value
+- Prevented duplicate widget processes with an automatic process lock
 
 ### Changed
 

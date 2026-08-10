@@ -1,5 +1,9 @@
 # SpotifyControl
 
+<p align="center">
+  <img src="Assets/AppIcon.png" width="144" alt="SpotifyControl visualizer icon">
+</p>
+
 A tiny, always-on-top Spotify controller for macOS.
 
 SpotifyControl keeps album artwork, track information, playback controls, and
@@ -20,6 +24,7 @@ no Spotify developer account or Web API credentials are required.
 - Previous, play/pause, and next controls
 - Spotify app volume control
 - Remembers the overlay position between launches
+- Prevents duplicate widget processes when launched repeatedly
 - Compact translucent macOS-native interface
 - No analytics, accounts, or bundled credentials
 
