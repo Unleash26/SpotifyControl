@@ -98,58 +98,74 @@ final class OverlayPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 
-struct WindowDragRegion: View {
+struct WindowDragRegion: NSViewRepresentable {
     var onOpenSpotify: () -> Void
     var onOpenAutomationSettings: () -> Void
     var onQuit: () -> Void
-    @State private var dragStartWindowOrigin: NSPoint?
 
-    var body: some View {
-        Color.clear
-            .contentShape(WindowDragHitShape(), eoFill: true)
-            .gesture(
-                DragGesture(minimumDistance: 1)
-                    .onChanged { value in
-                        guard let panel = NSApp.windows.first(where: { $0 is OverlayPanel }) else { return }
-                        if dragStartWindowOrigin == nil {
-                            dragStartWindowOrigin = panel.frame.origin
-                        }
-                        guard let dragStartWindowOrigin else { return }
-                        panel.setFrameOrigin(
-                            NSPoint(
-                                x: dragStartWindowOrigin.x + value.translation.width,
-                                y: dragStartWindowOrigin.y - value.translation.height
-                            )
-                        )
-                    }
-                    .onEnded { _ in
-                        dragStartWindowOrigin = nil
-                    }
-            )
-            .contextMenu {
-                Button("Spotifyを開く", action: onOpenSpotify)
-                Button("オートメーション設定を開く", action: onOpenAutomationSettings)
-                Divider()
-                Button("SpotifyControlを終了", action: onQuit)
-            }
-            .accessibilityHidden(true)
+    func makeNSView(context: Context) -> NSView {
+        let view = WindowDragView()
+        view.setAccessibilityElement(false)
+        update(view)
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        guard let view = view as? WindowDragView else { return }
+        update(view)
+    }
+
+    private func update(_ view: WindowDragView) {
+        view.onOpenSpotify = onOpenSpotify
+        view.onOpenAutomationSettings = onOpenAutomationSettings
+        view.onQuit = onQuit
     }
 }
 
-private struct WindowDragHitShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.addRect(rect)
+private final class WindowDragView: NSView {
+    var onOpenSpotify: (() -> Void)?
+    var onOpenAutomationSettings: (() -> Void)?
+    var onQuit: (() -> Void)?
 
-        // These holes match the fixed transport, slider, and quit hit targets.
-        path.addEllipse(in: CGRect(x: 77, y: 59, width: 26, height: 26))
-        path.addEllipse(in: CGRect(x: 106, y: 56, width: 32, height: 32))
-        path.addEllipse(in: CGRect(x: 142, y: 59, width: 26, height: 26))
-        path.addRoundedRect(
-            in: CGRect(x: 227, y: 58, width: 59, height: 28),
-            cornerSize: CGSize(width: 14, height: 14)
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        window?.performDrag(with: event)
+    }
+
+    override func menu(for event: NSEvent) -> NSMenu? {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        menu.addItem(withTitle: "Spotifyを開く", action: #selector(openSpotify), keyEquivalent: "")
+        menu.addItem(
+            withTitle: "オートメーション設定を開く",
+            action: #selector(openAutomationSettings),
+            keyEquivalent: ""
         )
-        path.addEllipse(in: CGRect(x: 285, y: 5, width: 28, height: 28))
-        return path
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "SpotifyControlを終了", action: #selector(quit), keyEquivalent: "")
+
+        for item in menu.items where !item.isSeparatorItem {
+            item.target = self
+        }
+        return menu
+    }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .openHand)
+    }
+
+    @objc private func openSpotify() {
+        onOpenSpotify?()
+    }
+
+    @objc private func openAutomationSettings() {
+        onOpenAutomationSettings?()
+    }
+
+    @objc private func quit() {
+        onQuit?()
     }
 }
