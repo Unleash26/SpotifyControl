@@ -107,12 +107,12 @@ private struct PlaybackTimeline: View {
             let canSeek = duration > 0 && model.snapshot.state.canControlTrack
             let progress = duration > 0 ? min(1, max(0, position / duration)) : 0
             let phase = model.snapshot.state.isPlaying && !reduceMotion
-                ? context.date.timeIntervalSinceReferenceDate * 5.2
+                ? LiquidRibbonProfile.phase(at: context.date)
                 : 0
 
             VStack(spacing: 0) {
                 GeometryReader { geometry in
-                    WaveformRail(
+                    LiquidRibbonRail(
                         progress: progress,
                         phase: phase,
                         isPlaying: model.snapshot.state.isPlaying,
@@ -247,7 +247,7 @@ private struct PlaybackTimeline: View {
     }
 }
 
-private struct WaveformRail: View {
+private struct LiquidRibbonRail: View {
     var progress: Double
     var phase: Double
     var isPlaying: Bool
@@ -261,41 +261,57 @@ private struct WaveformRail: View {
         Canvas { context, size in
             guard size.width > 0, size.height > 0 else { return }
 
-            let centerY = size.height / 2
-            let activeWidth = size.width * CGFloat(progress)
-            var rail = Path()
-            rail.move(to: CGPoint(x: 0, y: centerY))
-            rail.addLine(to: CGPoint(x: size.width, y: centerY))
-            context.stroke(
-                rail,
-                with: .color(.white.opacity(increasedContrast ? 0.58 : 0.36)),
-                style: StrokeStyle(lineWidth: 3.5, lineCap: .round)
+            let centerY = max(0, min(size.height - 7, size.height / 2 + 3))
+            let clampedProgress = progress.isFinite ? min(1, max(0, progress)) : 0
+            let activeWidth = size.width * CGFloat(clampedProgress)
+            let railHeight: CGFloat = increasedContrast ? 6 : 5.5
+            let railTop = centerY - railHeight / 2
+            let railBottom = centerY + railHeight / 2
+            let railRect = CGRect(x: 0, y: railTop, width: size.width, height: railHeight)
+            context.fill(
+                Path(roundedRect: railRect, cornerRadius: railHeight / 2),
+                with: .color(.white.opacity(increasedContrast ? 0.60 : 0.34))
             )
 
             if activeWidth > 0 {
-                var wave = Path()
-                let amplitude: CGFloat = reduceMotion ? 0 : (isPlaying ? 4.2 : 2.8)
-                let wavelength: CGFloat = 64
-                let phaseOffset = CGFloat(phase)
+                let maximumLift: CGFloat = increasedContrast ? 9.75 : 9.25
+                let capRadius = min(railHeight / 2, activeWidth / 2)
+                var ribbon = Path()
+                ribbon.move(to: CGPoint(x: 0, y: centerY))
+                ribbon.addQuadCurve(
+                    to: CGPoint(x: capRadius, y: railTop),
+                    control: CGPoint(x: 0, y: railTop)
+                )
 
-                for x in stride(from: CGFloat.zero, through: activeWidth, by: 1) {
-                    let leadingRamp = min(1, x / 10)
-                    let trailingRamp = min(1, max(0, activeWidth - x) / 10)
-                    let envelope = leadingRamp * trailingRamp
-                    let angle = (x / wavelength) * (.pi * 2) - phaseOffset
-                    let y = centerY + sin(angle) * amplitude * envelope
-
-                    if x == 0 {
-                        wave.move(to: CGPoint(x: x, y: y))
-                    } else {
-                        wave.addLine(to: CGPoint(x: x, y: y))
-                    }
+                for x in stride(from: capRadius, through: activeWidth, by: 1) {
+                    let amount = LiquidRibbonProfile.amount(
+                        at: Double(x),
+                        trackWidth: Double(size.width),
+                        activeWidth: Double(activeWidth),
+                        phase: phase,
+                        isAnimated: isPlaying && !reduceMotion
+                    )
+                    ribbon.addLine(
+                        to: CGPoint(x: x, y: railTop - maximumLift * CGFloat(amount))
+                    )
                 }
 
-                context.stroke(
-                    wave,
-                    with: .color(Color.panelText),
-                    style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round)
+                ribbon.addLine(to: CGPoint(x: activeWidth, y: railTop))
+                ribbon.addLine(to: CGPoint(x: activeWidth, y: railBottom))
+                ribbon.addLine(to: CGPoint(x: capRadius, y: railBottom))
+                ribbon.addQuadCurve(
+                    to: CGPoint(x: 0, y: centerY),
+                    control: CGPoint(x: 0, y: railBottom)
+                )
+                ribbon.closeSubpath()
+
+                context.fill(
+                    ribbon,
+                    with: .color(
+                        increasedContrast
+                            ? Color.panelText
+                            : Color.panelProgressActive
+                    )
                 )
             }
 
@@ -311,7 +327,10 @@ private struct WaveformRail: View {
                     Path(ellipseIn: thumbRect.offsetBy(dx: 0, dy: 1.5)),
                     with: .color(.black.opacity(0.30))
                 )
-                context.fill(Path(ellipseIn: thumbRect), with: .color(Color.panelText))
+                context.fill(
+                    Path(ellipseIn: thumbRect),
+                    with: .color(increasedContrast ? Color.panelText : Color.panelProgressThumb)
+                )
                 context.stroke(
                     Path(ellipseIn: thumbRect),
                     with: .color(.white.opacity(0.42)),
@@ -573,4 +592,6 @@ private extension PlaybackState {
 private extension Color {
     static let panelText = Color(red: 0.97, green: 0.975, blue: 0.96)
     static let panelSecondaryText = Color.white.opacity(0.72)
+    static let panelProgressActive = Color(red: 0.70, green: 0.81, blue: 0.95)
+    static let panelProgressThumb = Color(red: 0.84, green: 0.90, blue: 0.99)
 }

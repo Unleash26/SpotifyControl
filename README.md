@@ -21,7 +21,7 @@ no Spotify developer account or Web API credentials are required.
 
 - Always-on-top overlay that can appear across Spaces and full-screen apps
 - Static full-bleed album artwork with track, artist, and album information
-- Animated playback progress with elapsed time, duration, and seeking
+- Animated liquid-ribbon progress with elapsed time, duration, and seeking
 - Previous, play/pause, and next controls
 - Remembers the overlay position between launches
 - Prevents duplicate widget processes when launched repeatedly
@@ -69,7 +69,7 @@ macOS to request this permission again.
 ## Usage
 
 - Drag the glass background to reposition the overlay.
-- Drag the waveform to seek within the current track.
+- Drag the liquid-ribbon timeline to seek within the current track.
 - Right-click for Spotify, Automation settings, and Quit actions.
 - Use the close button in the upper-right corner to quit.
 - If Spotify is closed, pressing Play launches it in the background and resumes

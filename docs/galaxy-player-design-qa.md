@@ -4,11 +4,12 @@ final result: passed
 
 ## Compared State
 
-- Reference: `/var/folders/qk/q7mf_rz576n07ny_8tzd_fq80000gn/T/codex-clipboard-c297f173-d118-48ad-aae9-3360d98213b7.png`
+- Composition reference: `/var/folders/qk/q7mf_rz576n07ny_8tzd_fq80000gn/T/codex-clipboard-c297f173-d118-48ad-aae9-3360d98213b7.png`
+- Liquid-ribbon reference: `/Users/yuyatakeda/Downloads/Screen_Recording_20260811_171935_One UI Home.mp4`
 - Native implementation capture: `docs/screenshots/galaxy-player-implementation.png`
 - Side-by-side comparison: `docs/screenshots/galaxy-player-design-comparison.png`
 - Comparison viewport: both cards normalized to `380 x 150 px`
-- Runtime state: Spotify running and playing, approximately 44% elapsed, pointer outside the card
+- Runtime state: Spotify running and playing, approximately `01:41 / 03:29` in the reference and `01:41 / 03:28` in the implementation, pointer outside the card
 
 ## Fidelity Result
 
@@ -19,8 +20,11 @@ final result: passed
 - The implementation preserves the reference's artwork-led card, dark treatment,
   metadata hierarchy, progress/time band, continuous rounded shape, and centered
   transport row.
-- The waveform wavelength was reduced after comparison so the played segment uses
-  broad Galaxy-like curves instead of a dense audio waveform.
+- The played segment is a filled ribbon with a stable lower edge. Its upper edge
+  morphs between one broad lobe and two shallower lobes instead of drawing a thin
+  sine-wave stroke.
+- Frame sampling found an approximately `2.1s` deterministic loop in the reference;
+  the implementation uses the same period without reading audio data.
 - A fixed dark scrim and text shadow keep metadata readable across unrelated real
   album covers.
 
@@ -32,18 +36,22 @@ final result: passed
   in the local Spotify snapshot and the user requested album context.
 - The hover-only quit control remains available for the macOS utility but is absent
   from the non-hover comparison state.
-- The waveform is a lightweight playback animation, not fabricated audio-frequency
+- The liquid ribbon is a lightweight playback animation, not fabricated audio-frequency
   analysis. Actual progress and seeking remain tied to Spotify's player position.
 
 ## Behavior And Stability Evidence
 
-- `swift test`: 18 tests passed, 0 failures.
+- `swift test`: 23 tests passed, 0 failures.
 - `swift build -c release`: passed.
-- Actual waveform drag moved Spotify from about `4.4s` to `108.7s`; the original
+- An actual timeline drag moved Spotify from about `4.4s` to `108.7s`; the original
   position was restored after the check.
 - The accessible play/pause action changed Spotify to playing and back to paused.
-- Two playing-state captures changed inside the waveform region while the sampled
-  artwork/metadata background region had zero changed pixels.
+- Five playing-state captures reproduced the reference's broad-lobe sequence. Two
+  playing-state captures changed inside the ribbon region while the sampled
+  artwork/metadata background region stayed identical (`ribbon RMSE 0.155648`,
+  `background RMSE 0`).
+- The accessible seek increment moved paused Spotify from about `74.685s` to
+  `79.684s`; play/pause changed the live player to playing and back to paused.
 - The first asynchronous Canvas pass exposed a transparent-panel damage bug during
   progress refresh. The final synchronous Canvas keeps the complete card rendered;
   repeated progress changes and captures remained intact.

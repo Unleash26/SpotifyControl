@@ -6,7 +6,7 @@ All notable changes to SpotifyControl are documented here.
 
 ### Added
 
-- Galaxy-inspired full-bleed artwork player with a lightweight animated waveform
+- Galaxy-inspired full-bleed artwork player with an animated liquid-ribbon timeline
 - Elapsed time, track duration, and drag-to-seek playback control
 - Smooth locally interpolated progress between Spotify refreshes
 
@@ -15,12 +15,13 @@ All notable changes to SpotifyControl are documented here.
 - Replaced the volume-focused compact layout with title, artist, album, progress,
   and centered transport controls
 - Preserved saved overlay placement while adopting the taller player-card size
+- Replaced the thin sine-wave stroke with One UI's filled, broad-lobe progress treatment
 
 ### Fixed
 
 - Kept resized saved frames fully inside the current display's visible bounds
 - Prevented failed or zero-duration refreshes during a drag from seeking to zero
-- Avoided transparent-panel damage during waveform updates by using a small
+- Avoided transparent-panel damage during timeline updates by using a small
   synchronous Canvas
 
 ## 0.2.0 - 2026-08-11
