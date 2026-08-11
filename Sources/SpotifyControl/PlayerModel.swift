@@ -6,13 +6,30 @@ final class PlayerModel: ObservableObject {
     @Published private(set) var snapshot = SpotifySnapshot.notRunning
     @Published var volume: Double = 50
 
-    private let bridge = SpotifyBridge()
+    private let bridge: SpotifyBridge
+    private let volumeWriteInterval: Duration
+    private let setSpotifyVolume: @MainActor (Int) async throws -> Void
+    private let volumeClock = ContinuousClock()
     private var refreshTask: Task<Void, Never>?
     private var volumeTask: Task<Void, Never>?
     private var isEditingVolume = false
     private var refreshGeneration = 0
     private var volumeWriteGeneration = 0
+    private var volumeWorkerGeneration = 0
     private var pendingVolumeWrite: Int?
+    private var lastVolumeWriteAt: ContinuousClock.Instant?
+
+    init(
+        volumeWriteInterval: Duration = .milliseconds(50),
+        setSpotifyVolume: (@MainActor (Int) async throws -> Void)? = nil
+    ) {
+        let bridge = SpotifyBridge()
+        self.bridge = bridge
+        self.volumeWriteInterval = volumeWriteInterval
+        self.setSpotifyVolume = setSpotifyVolume ?? { volume in
+            try await bridge.setVolume(volume)
+        }
+    }
 
     func start() {
         refreshTask?.cancel()
@@ -32,8 +49,11 @@ final class PlayerModel: ObservableObject {
     func stop() {
         refreshTask?.cancel()
         volumeTask?.cancel()
+        volumeWorkerGeneration += 1
         refreshTask = nil
         volumeTask = nil
+        pendingVolumeWrite = nil
+        lastVolumeWriteAt = nil
     }
 
     func refresh() async {
@@ -112,44 +132,70 @@ final class PlayerModel: ObservableObject {
         volume = newVolume
         isEditingVolume = isEditing
         volumeWriteGeneration += 1
-        let generation = volumeWriteGeneration
         let targetVolume = Int(volume.rounded())
         pendingVolumeWrite = targetVolume
-        queueVolumeUpdate(
-            targetVolume: targetVolume,
-            generation: generation,
-            delayNanoseconds: isEditing ? 140_000_000 : 0
-        )
+        scheduleVolumeUpdate(forceImmediate: !isEditing)
     }
 
-    private func queueVolumeUpdate(
-        targetVolume: Int,
-        generation: Int,
-        delayNanoseconds: UInt64
-    ) {
-        volumeTask?.cancel()
+    private func scheduleVolumeUpdate(forceImmediate: Bool) {
+        if forceImmediate {
+            volumeTask?.cancel()
+            volumeTask = nil
+        } else if volumeTask != nil {
+            return
+        }
+
+        let delay = volumeWriteDelay(forceImmediate: forceImmediate)
+        volumeWorkerGeneration += 1
+        let workerGeneration = volumeWorkerGeneration
 
         volumeTask = Task { [weak self] in
             guard let self else { return }
-            if delayNanoseconds > 0 {
+            if delay != .zero {
                 do {
-                    try await Task.sleep(nanoseconds: delayNanoseconds)
+                    try await Task.sleep(for: delay)
                 } catch {
                     return
                 }
             }
             guard !Task.isCancelled else { return }
-            do {
-                try await bridge.setVolume(targetVolume)
-                if generation == volumeWriteGeneration {
-                    pendingVolumeWrite = nil
-                }
-            } catch {
-                if generation == volumeWriteGeneration {
-                    pendingVolumeWrite = nil
-                    present(error)
-                }
+            await flushPendingVolume(workerGeneration: workerGeneration)
+        }
+    }
+
+    private func volumeWriteDelay(forceImmediate: Bool) -> Duration {
+        guard !forceImmediate, let lastVolumeWriteAt else { return .zero }
+        let elapsed = lastVolumeWriteAt.duration(to: volumeClock.now)
+        return elapsed < volumeWriteInterval ? volumeWriteInterval - elapsed : .zero
+    }
+
+    private func flushPendingVolume(workerGeneration: Int) async {
+        guard workerGeneration == volumeWorkerGeneration else { return }
+        guard let targetVolume = pendingVolumeWrite else {
+            volumeTask = nil
+            return
+        }
+
+        let generation = volumeWriteGeneration
+        lastVolumeWriteAt = volumeClock.now
+
+        do {
+            try await setSpotifyVolume(targetVolume)
+            if generation == volumeWriteGeneration {
+                pendingVolumeWrite = nil
             }
+        } catch {
+            if generation == volumeWriteGeneration {
+                pendingVolumeWrite = nil
+                present(error)
+            }
+        }
+
+        guard workerGeneration == volumeWorkerGeneration else { return }
+        volumeTask = nil
+
+        if pendingVolumeWrite != nil {
+            scheduleVolumeUpdate(forceImmediate: !isEditingVolume)
         }
     }
 

@@ -28,6 +28,7 @@ All notable changes to SpotifyControl are documented here.
 - Expanded window dragging to every non-interactive area of the overlay
 - Fixed lagging and jumping while dragging the overlay
 - Removed the misleading grab cursor shown over playback and volume controls
+- Replaced delayed volume debouncing with responsive latest-value throttling
 
 ### Changed
 
