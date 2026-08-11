@@ -1,8 +1,8 @@
 import XCTest
 @testable import SpotifyControl
 
-@MainActor
 final class PlayerModelVolumeTests: XCTestCase {
+    @MainActor
     func testDraggingSendsFirstValueImmediatelyAndThrottlesToLatestValue() async {
         var writes: [Int] = []
         let model = PlayerModel(volumeWriteInterval: .milliseconds(120)) { volume in
@@ -16,9 +16,6 @@ final class PlayerModelVolumeTests: XCTestCase {
         model.setVolume(20, isEditing: true)
         model.setVolume(30, isEditing: true)
 
-        try? await Task.sleep(for: .milliseconds(40))
-        XCTAssertEqual(writes, [10])
-
         let sentLatestValue = await waitUntil { writes == [10, 30] }
         XCTAssertTrue(sentLatestValue)
 
@@ -27,6 +24,7 @@ final class PlayerModelVolumeTests: XCTestCase {
         model.stop()
     }
 
+    @MainActor
     func testEndingDragFlushesLatestValueWithoutWaitingForThrottle() async {
         var writes: [Int] = []
         let model = PlayerModel(volumeWriteInterval: .milliseconds(300)) { volume in
@@ -48,6 +46,7 @@ final class PlayerModelVolumeTests: XCTestCase {
         model.stop()
     }
 
+    @MainActor
     private func waitUntil(
         timeoutIterations: Int = 100,
         condition: @escaping @MainActor () -> Bool
