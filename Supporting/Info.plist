@@ -31,7 +31,7 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Yuya Takeda</string>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Spotifyの再生状態取得、再生操作、音量調整に使用します。</string>
+	<string>Spotifyの再生状態取得、再生操作、再生位置の変更に使用します。</string>
 	<key>NSSupportsAutomaticGraphicsSwitching</key>
 	<true/>
 </dict>

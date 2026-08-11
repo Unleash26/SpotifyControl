@@ -2,12 +2,18 @@ import Foundation
 
 enum SpotifyScriptParser {
     static func snapshot(from values: [String]) throws -> SpotifySnapshot {
-        guard values.count == 6 else {
+        guard values.count == 8 else {
             throw SpotifyBridgeError.invalidResponse
         }
 
         let state = PlaybackState(rawValue: values[0]) ?? .unknown
         let volume = min(100, max(0, Int(values[5]) ?? 50))
+        // Spotify reports current-track duration in milliseconds at runtime.
+        let durationSeconds = nonnegativeFiniteDouble(values[7]) / 1_000
+        let positionSeconds = min(
+            durationSeconds,
+            nonnegativeFiniteDouble(values[6])
+        )
         let title = values[1].nilIfEmpty ?? "曲情報なし"
         let artist = values[2].nilIfEmpty ?? state.displayText
         let artworkURL = values[4].nilIfEmpty.flatMap(URL.init(string:))
@@ -19,8 +25,15 @@ enum SpotifyScriptParser {
             album: values[3],
             artworkURL: artworkURL,
             volume: volume,
+            positionSeconds: positionSeconds,
+            durationSeconds: durationSeconds,
             message: nil
         )
+    }
+
+    private static func nonnegativeFiniteDouble(_ value: String) -> Double {
+        guard let parsed = Double(value), parsed.isFinite else { return 0 }
+        return max(0, parsed)
     }
 
     static func bridgeError(from error: NSDictionary) -> SpotifyBridgeError {

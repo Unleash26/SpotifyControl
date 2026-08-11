@@ -5,9 +5,9 @@ final class PlayerModelVolumeTests: XCTestCase {
     @MainActor
     func testDraggingSendsFirstValueImmediatelyAndThrottlesToLatestValue() async {
         var writes: [Int] = []
-        let model = PlayerModel(volumeWriteInterval: .milliseconds(120)) { volume in
+        let model = PlayerModel(volumeWriteInterval: .milliseconds(120), setSpotifyVolume: { volume in
             writes.append(volume)
-        }
+        })
 
         model.setVolume(10, isEditing: true)
         let sentFirstValue = await waitUntil { writes == [10] }
@@ -27,9 +27,9 @@ final class PlayerModelVolumeTests: XCTestCase {
     @MainActor
     func testEndingDragFlushesLatestValueWithoutWaitingForThrottle() async {
         var writes: [Int] = []
-        let model = PlayerModel(volumeWriteInterval: .milliseconds(300)) { volume in
+        let model = PlayerModel(volumeWriteInterval: .milliseconds(300), setSpotifyVolume: { volume in
             writes.append(volume)
-        }
+        })
 
         model.setVolume(10, isEditing: true)
         let sentFirstValue = await waitUntil { writes == [10] }

@@ -56,8 +56,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.isMovableByWindowBackground = false
         panel.isExcludedFromWindowsMenu = true
         panel.animationBehavior = .utilityWindow
-        Self.restoreFrameIfAvailable(for: panel, fallbackSize: size)
         panel.setFrameAutosaveName(Self.frameAutosaveName)
+        Self.restoreFrameIfAvailable(for: panel, fallbackSize: size)
 
         let rootView = OverlayView(model: playerModel)
         let hostingView = NSHostingView(rootView: rootView)
@@ -83,13 +83,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private static func restoreFrameIfAvailable(for panel: NSPanel, fallbackSize: NSSize) {
         guard panel.setFrameUsingName(frameAutosaveName) else { return }
 
-        guard let screen = NSScreen.screens.first(where: { $0.visibleFrame.intersects(panel.frame) }) else {
+        let restoredFrame = panel.frame
+        guard let screen = NSScreen.screens.first(where: { $0.visibleFrame.intersects(restoredFrame) }) else {
             panel.setFrameOrigin(defaultOrigin(for: fallbackSize))
+            panel.setContentSize(fallbackSize)
             return
         }
 
-        let constrainedFrame = panel.constrainFrameRect(panel.frame, to: screen)
-        panel.setFrame(constrainedFrame, display: false)
+        // Borderless, non-resizable panels can restore the saved origin while silently
+        // retaining the new size. Clamp explicitly because constrainFrameRect does not
+        // reliably move this panel style back inside the visible frame.
+        let resizedFrame = OverlayFrameRestoration.constrainedFrame(
+            restoredOrigin: restoredFrame.origin,
+            size: fallbackSize,
+            visibleFrame: screen.visibleFrame
+        )
+        panel.setFrame(resizedFrame, display: false)
+    }
+}
+
+enum OverlayFrameRestoration {
+    static func constrainedFrame(
+        restoredOrigin: NSPoint,
+        size: NSSize,
+        visibleFrame: NSRect
+    ) -> NSRect {
+        let maximumOriginX = max(visibleFrame.minX, visibleFrame.maxX - size.width)
+        let maximumOriginY = max(visibleFrame.minY, visibleFrame.maxY - size.height)
+        let origin = NSPoint(
+            x: min(maximumOriginX, max(visibleFrame.minX, restoredOrigin.x)),
+            y: min(maximumOriginY, max(visibleFrame.minY, restoredOrigin.y))
+        )
+        return NSRect(origin: origin, size: size)
     }
 }
 

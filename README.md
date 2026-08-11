@@ -6,8 +6,8 @@
 
 A tiny, always-on-top Spotify controller for macOS.
 
-SpotifyControl keeps album artwork, track information, playback controls, and
-Spotify volume available in a compact glass overlay across Spaces and full-screen
+SpotifyControl keeps album artwork, track information, playback progress, and
+playback controls available in a compact glass overlay across Spaces and full-screen
 apps. It talks directly to the installed Spotify desktop app through Apple Events;
 no Spotify developer account or Web API credentials are required.
 
@@ -15,14 +15,14 @@ no Spotify developer account or Web API credentials are required.
 > or endorsed by Spotify AB. Spotify and the Spotify logo are trademarks of their
 > respective owners.
 
-![SpotifyControl overlay](docs/screenshots/spotify-control.jpg)
+![SpotifyControl overlay](docs/screenshots/galaxy-player-implementation.png)
 
 ## Features
 
 - Always-on-top overlay that can appear across Spaces and full-screen apps
-- Current album artwork, track title, and artist
+- Static full-bleed album artwork with track, artist, and album information
+- Animated playback progress with elapsed time, duration, and seeking
 - Previous, play/pause, and next controls
-- Spotify app volume control
 - Remembers the overlay position between launches
 - Prevents duplicate widget processes when launched repeatedly
 - Compact translucent macOS-native interface
@@ -69,6 +69,7 @@ macOS to request this permission again.
 ## Usage
 
 - Drag the glass background to reposition the overlay.
+- Drag the waveform to seek within the current track.
 - Right-click for Spotify, Automation settings, and Quit actions.
 - Use the close button in the upper-right corner to quit.
 - If Spotify is closed, pressing Play launches it in the background and resumes
@@ -94,8 +95,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
 - The Spotify desktop app must be installed.
 - SpotifyControl controls Spotify's own volume, not the macOS system volume.
-- Playback position, shuffle, repeat, and playlist browsing are not currently
-  exposed.
+- Shuffle, repeat, and playlist browsing are not currently exposed.
 - Apple Events calls are serialized and limited to three seconds; the first
   macOS permission prompt can still briefly delay a refresh.
 
@@ -107,7 +107,7 @@ SpotifyControl is available under the [MIT License](LICENSE).
 
 ## 日本語
 
-SpotifyControlは、Spotifyの曲情報・再生操作・音量を、ほかのアプリや
+SpotifyControlは、Spotifyの曲情報・再生位置・再生操作を、ほかのアプリや
 フルスクリーン表示の上から操作できる小型macOSオーバーレイです。
 Spotify Web APIやAPIキーは不要で、macOSのApple Eventsを使ってローカルの
 Spotifyアプリだけを操作します。

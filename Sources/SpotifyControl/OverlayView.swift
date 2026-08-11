@@ -7,25 +7,8 @@ struct OverlayView: View {
 
     var body: some View {
         ZStack {
-            PanelBackground()
+            PlayerBackdrop(snapshot: model.snapshot)
                 .allowsHitTesting(false)
-
-            HStack(spacing: 10) {
-                ArtworkView(url: model.snapshot.artworkURL, state: model.snapshot.state)
-
-                VStack(alignment: .leading, spacing: 7) {
-                    HeaderView(snapshot: model.snapshot)
-
-                    PlayerControls(model: model)
-                        .hidden()
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.leading, 11)
-            .padding(.trailing, 10)
-            .padding(.vertical, 10)
-            .frame(width: OverlayLayout.width, height: OverlayLayout.height)
-            .allowsHitTesting(false)
 
             WindowDragRegion(
                 onOpenSpotify: model.openSpotify,
@@ -34,29 +17,36 @@ struct OverlayView: View {
             )
             .frame(width: OverlayLayout.width, height: OverlayLayout.height)
 
-            HStack(spacing: 10) {
-                Color.clear
-                    .frame(width: OverlayLayout.artworkSize, height: OverlayLayout.artworkSize)
+            VStack(alignment: .leading, spacing: 0) {
+                TrackMetadata(snapshot: model.snapshot)
+                    .padding(.trailing, 24)
                     .allowsHitTesting(false)
 
-                VStack(alignment: .leading, spacing: 7) {
-                    HeaderView(snapshot: model.snapshot)
-                        .hidden()
-                        .allowsHitTesting(false)
+                Spacer(minLength: 8)
 
-                    PlayerControls(model: model)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                PlaybackTimeline(model: model)
+
+                Spacer(minLength: 5)
+
+                TransportControls(model: model)
+                    .frame(maxWidth: .infinity)
             }
-            .padding(.leading, 11)
-            .padding(.trailing, 10)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 20)
+            .padding(.top, 15)
+            .padding(.bottom, 12)
             .frame(width: OverlayLayout.width, height: OverlayLayout.height)
-            .overlay(alignment: .topTrailing) {
-                QuitButton()
-                    .opacity(isHovering ? 1 : 0.52)
-                    .padding(7)
-            }
+
+            QuitButton()
+                .opacity(isHovering ? 0.78 : 0)
+                .allowsHitTesting(isHovering)
+                .accessibilityHidden(!isHovering)
+                .padding(9)
+                .frame(
+                    width: OverlayLayout.width,
+                    height: OverlayLayout.height,
+                    alignment: .topTrailing
+                )
+                .animation(.easeOut(duration: 0.12), value: isHovering)
         }
         .frame(width: OverlayLayout.windowWidth, height: OverlayLayout.windowHeight)
         .onHover { isHovering = $0 }
@@ -64,114 +54,271 @@ struct OverlayView: View {
     }
 }
 
-private struct PlayerControls: View {
-    @ObservedObject var model: PlayerModel
-
-    var body: some View {
-        HStack(spacing: 10) {
-            TransportControls(model: model)
-            Spacer(minLength: 4)
-            VolumeControl(model: model)
-        }
-    }
-}
-
-private struct ArtworkView: View {
-    var url: URL?
-    var state: PlaybackState
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.black.opacity(0.16))
-
-            if let url {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .empty:
-                        ProgressView()
-                            .controlSize(.small)
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    case .failure:
-                        placeholder
-                    @unknown default:
-                        placeholder
-                    }
-                }
-            } else {
-                placeholder
-            }
-        }
-        .frame(width: OverlayLayout.artworkSize, height: OverlayLayout.artworkSize)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(.white.opacity(0.28), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.30), radius: 10, x: 0, y: 7)
-        .accessibilityHidden(true)
-    }
-
-    private var placeholder: some View {
-        ZStack {
-            LinearGradient(
-                colors: placeholderColors,
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            Image(systemName: state == .unavailable ? "exclamationmark.triangle.fill" : "music.note")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.94))
-        }
-    }
-
-    private var placeholderColors: [Color] {
-        switch state {
-        case .playing:
-            return [Color(red: 0.12, green: 0.74, blue: 0.32), Color(red: 0.04, green: 0.42, blue: 0.22)]
-        case .paused:
-            return [Color(red: 0.48, green: 0.52, blue: 0.58), Color(red: 0.23, green: 0.26, blue: 0.31)]
-        case .unavailable:
-            return [Color(red: 0.82, green: 0.20, blue: 0.20), Color(red: 0.42, green: 0.12, blue: 0.18)]
-        default:
-            return [Color(red: 0.23, green: 0.24, blue: 0.27), Color(red: 0.08, green: 0.09, blue: 0.10)]
-        }
-    }
-}
-
-private struct HeaderView: View {
+private struct TrackMetadata: View {
     var snapshot: SpotifySnapshot
+    @Environment(\.colorSchemeContrast) private var accessibilityContrast
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 5) {
-                Circle()
-                    .fill(snapshot.state.isPlaying ? Color.spotifyGreen : Color.secondary.opacity(0.65))
-                    .frame(width: 5, height: 5)
-
-                Text(snapshot.state.compactStatusLabel)
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Color.panelMutedText)
-                    .lineLimit(1)
-            }
-
             Text(snapshot.title)
-                .font(.system(size: 13, weight: .bold))
+                .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(Color.panelText)
                 .lineLimit(1)
                 .truncationMode(.tail)
 
-            Text(snapshot.artist)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(Color.panelSecondaryText)
+            Text(secondaryText)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(
+                    accessibilityContrast == .increased
+                        ? Color.white
+                        : Color.panelSecondaryText
+                )
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
-        .padding(.trailing, 14)
+        .shadow(color: .black.opacity(0.48), radius: 2, y: 1)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var secondaryText: String {
+        let values = [snapshot.artist, snapshot.album]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return values.isEmpty ? snapshot.state.compactStatusLabel : values.joined(separator: " · ")
+    }
+
+}
+
+private struct PlaybackTimeline: View {
+    @ObservedObject var model: PlayerModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var accessibilityContrast
+    @FocusState private var isTimelineFocused: Bool
+
+    var body: some View {
+        TimelineView(
+            .animation(
+                minimumInterval: 1.0 / 30.0,
+                paused: !model.snapshot.state.isPlaying || reduceMotion
+            )
+        ) { context in
+            let duration = model.snapshot.durationSeconds
+            let position = model.displayedPosition(at: context.date)
+            let canSeek = duration > 0 && model.snapshot.state.canControlTrack
+            let progress = duration > 0 ? min(1, max(0, position / duration)) : 0
+            let phase = model.snapshot.state.isPlaying && !reduceMotion
+                ? context.date.timeIntervalSinceReferenceDate * 5.2
+                : 0
+
+            VStack(spacing: 0) {
+                GeometryReader { geometry in
+                    WaveformRail(
+                        progress: progress,
+                        phase: phase,
+                        isPlaying: model.snapshot.state.isPlaying,
+                        reduceMotion: reduceMotion,
+                        increasedContrast: accessibilityContrast == .increased,
+                        showsThumb: canSeek
+                    )
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged {
+                                updatePosition(
+                                    at: $0.location.x,
+                                    width: geometry.size.width,
+                                    duration: duration,
+                                    isEditing: true
+                                )
+                            }
+                            .onEnded {
+                                updatePosition(
+                                    at: $0.location.x,
+                                    width: geometry.size.width,
+                                    duration: duration,
+                                    isEditing: false
+                                )
+                            }
+                    )
+                }
+                .frame(height: 24)
+
+                HStack {
+                    Text(formattedTime(position))
+                    Spacer()
+                    Text(formattedTime(duration))
+                }
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(
+                    accessibilityContrast == .increased
+                        ? Color.white
+                        : Color.panelSecondaryText
+                )
+                .allowsHitTesting(false)
+            }
+            .opacity(canSeek ? 1 : 0.52)
+            .allowsHitTesting(canSeek)
+            .focusable(canSeek)
+            .focused($isTimelineFocused)
+            .overlay {
+                if isTimelineFocused {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .stroke(.white.opacity(0.86), lineWidth: 1.5)
+                        .padding(-4)
+                }
+            }
+            .onMoveCommand { direction in
+                guard canSeek else { return }
+                let step = max(5, duration * 0.01)
+                switch direction {
+                case .left, .down:
+                    model.setPlaybackPosition(position - step, isEditing: false)
+                case .right, .up:
+                    model.setPlaybackPosition(position + step, isEditing: false)
+                default:
+                    break
+                }
+            }
+            .accessibilityElement()
+            .accessibilityLabel("再生位置")
+            .accessibilityValue("\(spokenTime(position))、全体\(spokenTime(duration))")
+            .accessibilityHidden(!canSeek)
+            .accessibilityAdjustableAction { direction in
+                let step = max(5, duration * 0.01)
+                switch direction {
+                case .increment:
+                    model.setPlaybackPosition(position + step, isEditing: false)
+                case .decrement:
+                    model.setPlaybackPosition(position - step, isEditing: false)
+                @unknown default:
+                    break
+                }
+            }
+            .help(
+                canSeek
+                    ? "再生位置、\(spokenTime(position))、全体\(spokenTime(duration))。ドラッグまたは左右キーで変更"
+                    : "再生位置を取得できません"
+            )
+        }
+    }
+
+    private func updatePosition(
+        at location: CGFloat,
+        width: CGFloat,
+        duration: Double,
+        isEditing: Bool
+    ) {
+        guard width > 0, duration > 0 else { return }
+        let fraction = min(1, max(0, location / width))
+        model.setPlaybackPosition(Double(fraction) * duration, isEditing: isEditing)
+    }
+
+    private func formattedTime(_ seconds: Double) -> String {
+        guard seconds.isFinite, seconds >= 0 else { return "0:00" }
+        let totalSeconds = Int(seconds.rounded(.down))
+        let hours = totalSeconds / 3_600
+        let minutes = (totalSeconds % 3_600) / 60
+        let remainingSeconds = totalSeconds % 60
+
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, remainingSeconds)
+        }
+        return String(format: "%d:%02d", minutes, remainingSeconds)
+    }
+
+    private func spokenTime(_ seconds: Double) -> String {
+        guard seconds.isFinite, seconds >= 0 else { return "0秒" }
+        let totalSeconds = Int(seconds.rounded(.down))
+        let hours = totalSeconds / 3_600
+        let minutes = (totalSeconds % 3_600) / 60
+        let remainingSeconds = totalSeconds % 60
+        var parts: [String] = []
+        if hours > 0 {
+            parts.append("\(hours)時間")
+        }
+        if minutes > 0 {
+            parts.append("\(minutes)分")
+        }
+        if remainingSeconds > 0 || parts.isEmpty {
+            parts.append("\(remainingSeconds)秒")
+        }
+        return parts.joined()
+    }
+}
+
+private struct WaveformRail: View {
+    var progress: Double
+    var phase: Double
+    var isPlaying: Bool
+    var reduceMotion: Bool
+    var increasedContrast: Bool
+    var showsThumb: Bool
+
+    var body: some View {
+        // A synchronous canvas is deliberate here. Asynchronous Canvas rendering can
+        // clear sibling layers inside a transparent NSPanel during timeline updates.
+        Canvas { context, size in
+            guard size.width > 0, size.height > 0 else { return }
+
+            let centerY = size.height / 2
+            let activeWidth = size.width * CGFloat(progress)
+            var rail = Path()
+            rail.move(to: CGPoint(x: 0, y: centerY))
+            rail.addLine(to: CGPoint(x: size.width, y: centerY))
+            context.stroke(
+                rail,
+                with: .color(.white.opacity(increasedContrast ? 0.58 : 0.36)),
+                style: StrokeStyle(lineWidth: 3.5, lineCap: .round)
+            )
+
+            if activeWidth > 0 {
+                var wave = Path()
+                let amplitude: CGFloat = reduceMotion ? 0 : (isPlaying ? 4.2 : 2.8)
+                let wavelength: CGFloat = 64
+                let phaseOffset = CGFloat(phase)
+
+                for x in stride(from: CGFloat.zero, through: activeWidth, by: 1) {
+                    let leadingRamp = min(1, x / 10)
+                    let trailingRamp = min(1, max(0, activeWidth - x) / 10)
+                    let envelope = leadingRamp * trailingRamp
+                    let angle = (x / wavelength) * (.pi * 2) - phaseOffset
+                    let y = centerY + sin(angle) * amplitude * envelope
+
+                    if x == 0 {
+                        wave.move(to: CGPoint(x: x, y: y))
+                    } else {
+                        wave.addLine(to: CGPoint(x: x, y: y))
+                    }
+                }
+
+                context.stroke(
+                    wave,
+                    with: .color(Color.panelText),
+                    style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round)
+                )
+            }
+
+            if showsThumb {
+                let thumbSize: CGFloat = 13
+                let thumbRect = CGRect(
+                    x: min(size.width - thumbSize, max(0, activeWidth - thumbSize / 2)),
+                    y: centerY - thumbSize / 2,
+                    width: thumbSize,
+                    height: thumbSize
+                )
+                context.fill(
+                    Path(ellipseIn: thumbRect.offsetBy(dx: 0, dy: 1.5)),
+                    with: .color(.black.opacity(0.30))
+                )
+                context.fill(Path(ellipseIn: thumbRect), with: .color(Color.panelText))
+                context.stroke(
+                    Path(ellipseIn: thumbRect),
+                    with: .color(.white.opacity(0.42)),
+                    lineWidth: 0.75
+                )
+            }
+        }
     }
 }
 
@@ -179,55 +326,32 @@ private struct TransportControls: View {
     @ObservedObject var model: PlayerModel
 
     var body: some View {
-        HStack(spacing: 7) {
-            Button {
-                model.previousTrack()
-            } label: {
-                Image(systemName: "backward.fill")
-                    .font(.system(size: 10, weight: .semibold))
-                    .frame(width: 22, height: 22)
-            }
-            .accessibilityLabel("前の曲")
-            .help("前の曲")
-            .disabled(!model.snapshot.state.canControlTrack)
+        HStack(spacing: 27) {
+            TransportButton(
+                systemName: "backward.end.fill",
+                label: "前の曲",
+                size: 17,
+                isEnabled: model.snapshot.state.canControlTrack,
+                action: model.previousTrack
+            )
 
-            Button {
-                if model.snapshot.state == .permissionDenied {
-                    model.openAutomationSettings()
-                } else {
-                    model.playPause()
-                }
-            } label: {
-                Image(systemName: primaryControlIcon)
-                    .font(.system(size: 12, weight: .bold))
-                    .frame(width: 28, height: 28)
-                    .background {
-                        Circle()
-                            .fill(Color.panelText.opacity(0.96))
-                            .overlay {
-                                Circle()
-                                    .stroke(.white.opacity(0.38), lineWidth: 1)
-                            }
-                    }
-                    .foregroundStyle(Color.panelInk)
-                    .clipShape(Circle())
-            }
-            .accessibilityLabel(primaryControlLabel)
-            .help(primaryControlLabel)
-            .disabled(model.snapshot.state == .unavailable)
+            TransportButton(
+                systemName: primaryControlIcon,
+                label: primaryControlLabel,
+                size: 22,
+                isPrimary: true,
+                isEnabled: model.snapshot.state != .unavailable,
+                action: primaryAction
+            )
 
-            Button {
-                model.nextTrack()
-            } label: {
-                Image(systemName: "forward.fill")
-                    .font(.system(size: 10, weight: .semibold))
-                    .frame(width: 22, height: 22)
-            }
-            .accessibilityLabel("次の曲")
-            .help("次の曲")
-            .disabled(!model.snapshot.state.canControlTrack)
+            TransportButton(
+                systemName: "forward.end.fill",
+                label: "次の曲",
+                size: 17,
+                isEnabled: model.snapshot.state.canControlTrack,
+                action: model.nextTrack
+            )
         }
-        .buttonStyle(TransportButtonStyle())
     }
 
     private var primaryControlIcon: String {
@@ -243,89 +367,133 @@ private struct TransportControls: View {
         }
         return model.snapshot.state.isPlaying ? "一時停止" : "再生"
     }
-}
 
-private struct VolumeControl: View {
-    @ObservedObject var model: PlayerModel
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: model.volume == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(Color.panelSecondaryText)
-                .frame(width: 13)
-                .allowsHitTesting(false)
-
-            CompactVolumeSlider(model: model)
-
-            Text("\(Int(model.volume.rounded()))")
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color.panelSecondaryText)
-                .monospacedDigit()
-                .frame(width: 18, alignment: .trailing)
-                .allowsHitTesting(false)
+    private func primaryAction() {
+        if model.snapshot.state == .permissionDenied {
+            model.openAutomationSettings()
+        } else {
+            model.playPause()
         }
     }
 }
 
-private struct CompactVolumeSlider: View {
-    @ObservedObject var model: PlayerModel
+private struct TransportButton: View {
+    var systemName: String
+    var label: String
+    var size: CGFloat
+    var isPrimary = false
+    var isEnabled: Bool
+    var action: () -> Void
 
-    private let thumbSize: CGFloat = 10
+    @State private var isHovering = false
 
     var body: some View {
-        GeometryReader { geometry in
-            let usableWidth = max(0, geometry.size.width - thumbSize)
-            let fraction = min(1, max(0, model.volume / 100))
-            let thumbOffset = usableWidth * fraction
+        Button(action: action) {
+            Label(label, systemImage: systemName)
+                .labelStyle(.iconOnly)
+                .font(.system(size: size, weight: .bold))
+                .symbolRenderingMode(.monochrome)
+                .foregroundStyle(Color.panelText)
+                .frame(width: isPrimary ? 46 : 38, height: 32)
+                .background {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(.white.opacity(isHovering ? 0.15 : 0.001))
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .opacity(isEnabled ? 1 : 0.34)
+        .disabled(!isEnabled)
+        .onHover { isHovering = $0 }
+        .accessibilityLabel(label)
+        .help(label)
+    }
+}
 
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.white.opacity(0.16))
-                    .frame(width: usableWidth, height: 3)
-                    .offset(x: thumbSize / 2)
+private struct PlayerBackdrop: View {
+    var snapshot: SpotifySnapshot
+    @Environment(\.colorSchemeContrast) private var accessibilityContrast
 
-                Capsule()
-                    .fill(Color.spotifyGreen)
-                    .frame(width: thumbOffset, height: 3)
-                    .offset(x: thumbSize / 2)
+    var body: some View {
+        ZStack {
+            VisualEffectBackground()
+            fallback
 
-                Circle()
-                    .fill(Color.panelText)
-                    .frame(width: thumbSize, height: thumbSize)
-                    .shadow(color: .black.opacity(0.22), radius: 2, y: 1)
-                    .offset(x: thumbOffset)
+            if let artworkURL = snapshot.artworkURL {
+                AsyncImage(url: artworkURL, transaction: Transaction(animation: nil)) { phase in
+                    if case .success(let image) = phase {
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    }
+                }
+                .frame(width: OverlayLayout.width, height: OverlayLayout.height)
+                .clipped()
             }
-            .frame(maxHeight: .infinity)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { updateVolume(at: $0.location.x, width: geometry.size.width, isEditing: true) }
-                    .onEnded { updateVolume(at: $0.location.x, width: geometry.size.width, isEditing: false) }
+
+            Color.black.opacity(accessibilityContrast == .increased ? 0.58 : 0.44)
+
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.10),
+                    Color.black.opacity(0.22),
+                    Color.black.opacity(0.54)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            LinearGradient(
+                colors: [Color.black.opacity(0.08), .clear, Color.black.opacity(0.16)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(accessibilityContrast == .increased ? 0.52 : 0.36),
+                    Color.black.opacity(accessibilityContrast == .increased ? 0.24 : 0.14),
+                    .clear
+                ],
+                startPoint: .topLeading,
+                endPoint: .center
             )
         }
-        .frame(width: 54, height: 22)
-        .opacity(model.snapshot.state.canControlTrack ? 1 : 0.30)
-        .allowsHitTesting(model.snapshot.state.canControlTrack)
-        .accessibilityElement()
-        .accessibilityLabel("Spotifyの音量")
-        .accessibilityValue("\(Int(model.volume.rounded()))パーセント")
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment:
-                model.setVolume(min(100, model.volume + 1), isEditing: false)
-            case .decrement:
-                model.setVolume(max(0, model.volume - 1), isEditing: false)
-            @unknown default:
-                break
-            }
+        .frame(width: OverlayLayout.width, height: OverlayLayout.height)
+        .clipShape(RoundedRectangle(cornerRadius: OverlayLayout.cornerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: OverlayLayout.cornerRadius, style: .continuous)
+                .strokeBorder(.white.opacity(0.24), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.36), radius: 16, x: 0, y: 9)
+    }
+
+    private var fallback: some View {
+        ZStack {
+            LinearGradient(
+                colors: placeholderColors,
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            Image(systemName: snapshot.state == .unavailable ? "exclamationmark.triangle.fill" : "music.note")
+                .font(.system(size: 64, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.12))
+                .offset(x: 118, y: -10)
         }
     }
 
-    private func updateVolume(at location: CGFloat, width: CGFloat, isEditing: Bool) {
-        let usableWidth = max(1, width - thumbSize)
-        let position = min(usableWidth, max(0, location - thumbSize / 2))
-        model.setVolume((position / usableWidth) * 100, isEditing: isEditing)
+    private var placeholderColors: [Color] {
+        switch snapshot.state {
+        case .playing:
+            return [Color(red: 0.06, green: 0.43, blue: 0.26), Color(red: 0.025, green: 0.14, blue: 0.14)]
+        case .paused:
+            return [Color(red: 0.25, green: 0.29, blue: 0.34), Color(red: 0.08, green: 0.09, blue: 0.12)]
+        case .unavailable, .permissionDenied, .connectionError:
+            return [Color(red: 0.40, green: 0.16, blue: 0.20), Color(red: 0.12, green: 0.06, blue: 0.09)]
+        default:
+            return [Color(red: 0.17, green: 0.20, blue: 0.24), Color(red: 0.055, green: 0.065, blue: 0.08)]
+        }
     }
 }
 
@@ -335,55 +503,15 @@ private struct QuitButton: View {
             NSApp.terminate(nil)
         } label: {
             Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color.panelText.opacity(0.46))
-                .frame(width: 24, height: 24)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.panelText.opacity(0.82))
+                .frame(width: 25, height: 25)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        .keyboardShortcut("q", modifiers: .command)
         .accessibilityLabel("終了")
         .help("SpotifyControlを終了")
-    }
-}
-
-private struct TransportButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(Color.panelText)
-            .opacity(isEnabled ? (configuration.isPressed ? 0.58 : 1) : 0.30)
-            .contentShape(Circle())
-    }
-}
-
-private struct PanelBackground: View {
-    var body: some View {
-        ZStack {
-            VisualEffectBackground()
-                .clipShape(RoundedRectangle(cornerRadius: OverlayLayout.cornerRadius, style: .continuous))
-
-            RoundedRectangle(cornerRadius: OverlayLayout.cornerRadius, style: .continuous)
-                .fill(Color.panelGlassTint.opacity(0.055))
-
-            RoundedRectangle(cornerRadius: OverlayLayout.cornerRadius, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.30),
-                            Color.white.opacity(0.070),
-                            Color.black.opacity(0.045)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .blendMode(.screen)
-
-        }
-        .frame(width: OverlayLayout.width, height: OverlayLayout.height)
-        .clipShape(RoundedRectangle(cornerRadius: OverlayLayout.cornerRadius, style: .continuous))
-        .shadow(color: .black.opacity(0.32), radius: 14, x: 0, y: 8)
     }
 }
 
@@ -393,8 +521,7 @@ private struct VisualEffectBackground: NSViewRepresentable {
         view.blendingMode = .behindWindow
         view.material = .underWindowBackground
         view.state = .active
-        view.isEmphasized = false
-        view.alphaValue = 0.84
+        view.alphaValue = 0.88
         view.wantsLayer = true
         view.layer?.cornerRadius = OverlayLayout.cornerRadius
         view.layer?.masksToBounds = true
@@ -405,7 +532,7 @@ private struct VisualEffectBackground: NSViewRepresentable {
         view.material = .underWindowBackground
         view.blendingMode = .behindWindow
         view.state = .active
-        view.alphaValue = 0.84
+        view.alphaValue = 0.88
         view.layer?.cornerRadius = OverlayLayout.cornerRadius
         view.layer?.masksToBounds = true
     }
@@ -444,10 +571,6 @@ private extension PlaybackState {
 }
 
 private extension Color {
-    static let spotifyGreen = Color(red: 0.12, green: 0.73, blue: 0.33)
-    static let panelInk = Color(red: 0.02, green: 0.025, blue: 0.025)
-    static let panelText = Color(red: 0.96, green: 0.97, blue: 0.94)
-    static let panelSecondaryText = Color(red: 0.70, green: 0.73, blue: 0.68)
-    static let panelMutedText = Color(red: 0.58, green: 0.66, blue: 0.57)
-    static let panelGlassTint = Color(red: 0.055, green: 0.075, blue: 0.065)
+    static let panelText = Color(red: 0.97, green: 0.975, blue: 0.96)
+    static let panelSecondaryText = Color.white.opacity(0.72)
 }

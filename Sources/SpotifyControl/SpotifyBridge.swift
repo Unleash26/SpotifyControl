@@ -8,6 +8,8 @@ struct SpotifySnapshot: Equatable, Sendable {
     var album: String
     var artworkURL: URL?
     var volume: Int
+    var positionSeconds: Double = 0
+    var durationSeconds: Double = 0
     var message: String?
 
     static let unavailable = SpotifySnapshot(
@@ -17,6 +19,8 @@ struct SpotifySnapshot: Equatable, Sendable {
         album: "",
         artworkURL: nil,
         volume: 50,
+        positionSeconds: 0,
+        durationSeconds: 0,
         message: nil
     )
 
@@ -27,6 +31,8 @@ struct SpotifySnapshot: Equatable, Sendable {
         album: "",
         artworkURL: nil,
         volume: 50,
+        positionSeconds: 0,
+        durationSeconds: 0,
         message: nil
     )
 }
@@ -106,6 +112,8 @@ final class SpotifyBridge {
                 set trackAlbum to ""
                 set trackArtwork to ""
                 set currentVolume to (sound volume as string)
+                set currentPosition to "0"
+                set trackDuration to "0"
 
                 if playbackState is not "stopped" then
                     try
@@ -114,10 +122,12 @@ final class SpotifyBridge {
                         set trackArtist to artist of currentTrack
                         set trackAlbum to album of currentTrack
                         set trackArtwork to artwork url of currentTrack
+                        set currentPosition to (player position as string)
+                        set trackDuration to (duration of currentTrack as string)
                     end try
                 end if
 
-                return {playbackState, trackName, trackArtist, trackAlbum, trackArtwork, currentVolume}
+                return {playbackState, trackName, trackArtist, trackAlbum, trackArtwork, currentVolume, currentPosition, trackDuration}
             end tell
             """
 
@@ -162,6 +172,15 @@ final class SpotifyBridge {
         let clampedVolume = min(100, max(0, volume))
         try runCommand("""
         tell application id "\(bundleIdentifier)" to set sound volume to \(clampedVolume)
+        """)
+    }
+
+    func setPlayerPosition(_ seconds: Double) async throws {
+        guard isSpotifyRunning else { return }
+
+        let safePosition = seconds.isFinite ? max(0, seconds) : 0
+        try runCommand("""
+        tell application id "\(bundleIdentifier)" to set player position to \(safePosition)
         """)
     }
 
