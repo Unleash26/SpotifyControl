@@ -153,10 +153,6 @@ private final class WindowDragView: NSView {
         return menu
     }
 
-    override func resetCursorRects() {
-        addCursorRect(bounds, cursor: .openHand)
-    }
-
     @objc private func openSpotify() {
         onOpenSpotify?()
     }

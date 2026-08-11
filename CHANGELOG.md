@@ -27,6 +27,7 @@ All notable changes to SpotifyControl are documented here.
 - Prevented duplicate widget processes with an automatic process lock
 - Expanded window dragging to every non-interactive area of the overlay
 - Fixed lagging and jumping while dragging the overlay
+- Removed the misleading grab cursor shown over playback and volume controls
 
 ### Changed
 
