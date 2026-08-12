@@ -499,11 +499,6 @@ private struct PlayerBackdrop: View {
         }
         .frame(width: OverlayLayout.width, height: OverlayLayout.height)
         .clipShape(RoundedRectangle(cornerRadius: OverlayLayout.cornerRadius, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: OverlayLayout.cornerRadius, style: .continuous)
-                .strokeBorder(.white.opacity(0.24), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.36), radius: 16, x: 0, y: 9)
     }
 
     private var fallback: some View {

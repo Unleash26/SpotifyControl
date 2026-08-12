@@ -3,7 +3,9 @@ import SwiftUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private static let frameAutosaveName = NSWindow.FrameAutosaveName("SpotifyControlOverlay")
+    private static let frameAutosaveIdentifier = "SpotifyControlOverlay"
+    private static let frameAutosaveName = NSWindow.FrameAutosaveName(frameAutosaveIdentifier)
+    private static let frameAutosaveDefaultsKey = "NSWindow Frame \(frameAutosaveIdentifier)"
 
     private var panel: OverlayPanel?
     private var overlayScale = OverlaySizing.load()
@@ -130,6 +132,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private static func restoreFrameIfAvailable(for panel: NSPanel, fallbackSize: NSSize) {
+        let savedWindowFrame = OverlayFrameRestoration.savedWindowFrame(
+            from: UserDefaults.standard.string(forKey: frameAutosaveDefaultsKey)
+        )
         guard panel.setFrameUsingName(frameAutosaveName) else { return }
 
         let restoredFrame = panel.frame
@@ -142,8 +147,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Borderless, non-resizable panels can restore the saved origin while silently
         // retaining the new size. Clamp explicitly because constrainFrameRect does not
         // reliably move this panel style back inside the visible frame.
-        let resizedFrame = OverlayFrameRestoration.constrainedFrame(
+        let migratedOrigin = OverlayFrameRestoration.originPreservingVisibleCard(
             restoredOrigin: restoredFrame.origin,
+            savedWindowFrame: savedWindowFrame,
+            currentWindowSize: fallbackSize
+        )
+        let resizedFrame = OverlayFrameRestoration.constrainedFrame(
+            restoredOrigin: migratedOrigin,
             size: fallbackSize,
             visibleFrame: screen.visibleFrame
         )
@@ -152,6 +162,67 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 enum OverlayFrameRestoration {
+    private static let legacyShadowPadding: CGFloat = 14
+
+    static func savedWindowFrame(from frameAutosaveValue: String?) -> NSRect? {
+        guard let frameAutosaveValue else { return nil }
+        let values = frameAutosaveValue
+            .split(whereSeparator: { $0.isWhitespace })
+            .compactMap { Double($0) }
+        guard values.count >= 4,
+              values[0].isFinite,
+              values[1].isFinite,
+              values[2].isFinite,
+              values[3].isFinite,
+              values[2] > 0,
+              values[3] > 0
+        else {
+            return nil
+        }
+        return NSRect(x: values[0], y: values[1], width: values[2], height: values[3])
+    }
+
+    static func originPreservingVisibleCard(
+        restoredOrigin: NSPoint,
+        savedWindowFrame: NSRect?,
+        currentWindowSize: NSSize
+    ) -> NSPoint {
+        guard let savedWindowFrame,
+              currentWindowSize.width > 0,
+              currentWindowSize.height > 0
+        else {
+            return restoredOrigin
+        }
+
+        let widthScale = currentWindowSize.width / OverlayLayout.width
+        let heightScale = currentWindowSize.height / OverlayLayout.height
+        guard widthScale.isFinite,
+              heightScale.isFinite,
+              abs(widthScale - heightScale) < 0.001
+        else {
+            return restoredOrigin
+        }
+
+        let legacyPadding = legacyShadowPadding * widthScale
+        let expectedLegacySize = NSSize(
+            width: currentWindowSize.width + legacyPadding * 2,
+            height: currentWindowSize.height + legacyPadding * 2
+        )
+        let tolerance: CGFloat = 1.5
+        guard abs(savedWindowFrame.width - expectedLegacySize.width) <= tolerance,
+              abs(savedWindowFrame.height - expectedLegacySize.height) <= tolerance
+        else {
+            return restoredOrigin
+        }
+
+        // The old frame placed the visible card inside a transparent shadow gutter.
+        // Shift by that gutter once so removing it does not move the card on screen.
+        return NSPoint(
+            x: savedWindowFrame.minX + legacyPadding,
+            y: savedWindowFrame.minY + legacyPadding
+        )
+    }
+
     static func constrainedFrame(
         restoredOrigin: NSPoint,
         size: NSSize,
