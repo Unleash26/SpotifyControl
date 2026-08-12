@@ -291,14 +291,9 @@ private final class WindowResizeHandleView: NSView {
 
     override func resetCursorRects() {
         super.resetCursorRects()
-        if #available(macOS 15.0, *) {
-            addCursorRect(
-                bounds,
-                cursor: .frameResize(position: .bottomRight, directions: .all)
-            )
-        } else {
-            addCursorRect(bounds, cursor: .resizeLeftRight)
-        }
+        // Keep the source compatible with the older macOS SDK used by CI.
+        // The always-visible diagonal badge communicates the two-axis gesture.
+        addCursorRect(bounds, cursor: .resizeLeftRight)
     }
 
     override func mouseDown(with event: NSEvent) {
