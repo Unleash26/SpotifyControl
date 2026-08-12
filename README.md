@@ -1,21 +1,48 @@
-# SpotifyControl
-
 <p align="center">
-  <img src="Assets/AppIcon.png" width="144" alt="SpotifyControl visualizer icon">
+  <img src="Assets/AppIcon.png" width="128" alt="SpotifyControl app icon">
 </p>
 
-A tiny, always-on-top Spotify controller for macOS.
+<h1 align="center">SpotifyControl</h1>
+
+<p align="center">
+  A tiny, always-on-top Spotify controller for macOS.
+</p>
+
+<p align="center">
+  <a href="https://github.com/Unleash26/SpotifyControl/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Unleash26/SpotifyControl/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/Unleash26/SpotifyControl/releases/tag/v1.0.0"><img alt="Release v1.0.0" src="https://img.shields.io/badge/release-v1.0.0-1DB954"></a>
+  <img alt="macOS 13 or later" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"></a>
+</p>
+
+<p align="center">
+  <img src="docs/media/spotifycontrol-liquid-ribbon.gif" width="820" alt="SpotifyControl controlling a real Spotify track while its liquid-ribbon timeline moves">
+</p>
+
+<p align="center">
+  <sub>Actual SpotifyControl v1.0.0 interface — the liquid ribbon moves in a calm 2.1-second loop while music is playing.</sub>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Unleash26/SpotifyControl/releases/tag/v1.0.0">Release notes</a>
+  ·
+  <a href="#build-and-run">Build from source</a>
+  ·
+  <a href="#日本語">日本語</a>
+</p>
 
 SpotifyControl keeps album artwork, track information, playback progress, and
-playback controls available in a compact glass overlay across Spaces and full-screen
-apps. It talks directly to the installed Spotify desktop app through Apple Events;
-no Spotify developer account or Web API credentials are required.
+essential playback controls available in a compact glass overlay across Spaces
+and full-screen apps. The panel stays out of the way: drag it anywhere, or resize
+it continuously from the lower-right corner down to 55% of its default size.
+
+It talks directly to the installed Spotify desktop app through Apple Events. No
+Spotify developer account, Web API credentials, analytics, or user account is
+required.
 
 > SpotifyControl is an independent, unofficial project. It is not affiliated with
 > or endorsed by Spotify AB. Spotify and the Spotify logo are trademarks of their
 > respective owners.
-
-![SpotifyControl overlay](docs/screenshots/galaxy-player-implementation.png)
 
 ## Features
 
@@ -28,6 +55,15 @@ no Spotify developer account or Web API credentials are required.
 - Prevents duplicate widget processes when launched repeatedly
 - Compact translucent macOS-native interface
 - No analytics, accounts, or bundled credentials
+
+## Actual interface
+
+![SpotifyControl v1.0.0 running with real track data](docs/screenshots/spotifycontrol-v1.png)
+
+The album artwork remains still. Only the elapsed portion of the timeline gently
+morphs while Spotify is playing; it is decorative motion rather than an audio
+visualizer. Seeking, transport controls, window dragging, and resizing remain
+fully interactive.
 
 ## Requirements
 
