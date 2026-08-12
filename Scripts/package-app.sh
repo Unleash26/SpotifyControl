@@ -8,6 +8,7 @@ APP_DIR="$BUILD_DIR/SpotifyControl.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
+SIGNING_IDENTITY="${SPOTIFYCONTROL_SIGNING_IDENTITY:--}"
 
 case "$CONFIGURATION" in
   debug|release) ;;
@@ -41,7 +42,18 @@ if [[ "$CONFIGURATION" == "release" ]]; then
 fi
 
 /usr/bin/plutil -lint "$CONTENTS_DIR/Info.plist" >/dev/null
-/usr/bin/codesign --force --deep --sign - "$APP_DIR"
+if [[ "$SIGNING_IDENTITY" == "-" ]]; then
+  /usr/bin/codesign --force --deep --sign - "$APP_DIR"
+else
+  /usr/bin/codesign \
+    --force \
+    --deep \
+    --options runtime \
+    --timestamp \
+    --entitlements "$ROOT_DIR/Supporting/SpotifyControl.entitlements" \
+    --sign "$SIGNING_IDENTITY" \
+    "$APP_DIR"
+fi
 /usr/bin/codesign --verify --deep --strict "$APP_DIR"
 
 echo "$APP_DIR"

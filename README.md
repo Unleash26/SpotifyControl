@@ -35,6 +35,13 @@ no Spotify developer account or Web API credentials are required.
 - [Spotify for macOS](https://www.spotify.com/download/mac/)
 - Xcode Command Line Tools when building from source
 
+## Download
+
+Download the Apple silicon build from the
+[latest GitHub release](https://github.com/Unleash26/SpotifyControl/releases/latest).
+The published app is signed with a Developer ID certificate and notarized by
+Apple. Move `SpotifyControl.app` to Applications, then open it normally.
+
 ## Build and run
 
 ```bash
@@ -49,9 +56,8 @@ command produces:
 - `build/SpotifyControl.app`
 
 The app is built for the architecture of the Mac running the command and is
-ad-hoc signed for local use. This repository currently distributes source code,
-not a notarized binary release. A future downloadable build must be signed with a
-Developer ID certificate and notarized before publication.
+ad-hoc signed for local development. The downloadable GitHub release is built
+separately with a Developer ID signature and Apple notarization.
 
 ## First-launch permission
 

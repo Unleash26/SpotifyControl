@@ -2,7 +2,7 @@
 
 All notable changes to SpotifyControl are documented here.
 
-## Unreleased
+## 1.0.0 - 2026-08-12
 
 ### Added
 
@@ -27,6 +27,8 @@ All notable changes to SpotifyControl are documented here.
 - Removed a one-pixel rectangular backdrop seam exposed by continuous scaling
 - Avoided transparent-panel damage during timeline updates by using a small
   synchronous Canvas
+- Eliminated abrupt resizing when pointer movement crossed between
+  width-dominant and height-dominant drag directions
 
 ## 0.2.0 - 2026-08-11
 
