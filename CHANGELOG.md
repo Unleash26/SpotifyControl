@@ -2,6 +2,15 @@
 
 All notable changes to SpotifyControl are documented here.
 
+## 1.0.1 - 2026-08-12
+
+### Fixed
+
+- Removed the translucent outer frame around the overlay by making the panel
+  edge-to-edge with the visible card and removing its outer shadow and border
+- Migrated legacy saved window frames so the visible card keeps its previous
+  on-screen position after the transparent padding is removed
+
 ## 1.0.0 - 2026-08-12
 
 ### Added

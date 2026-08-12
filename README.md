@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/Unleash26/SpotifyControl/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Unleash26/SpotifyControl/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/Unleash26/SpotifyControl/releases/tag/v1.0.0"><img alt="Release v1.0.0" src="https://img.shields.io/badge/release-v1.0.0-1DB954"></a>
+  <a href="https://github.com/Unleash26/SpotifyControl/releases/tag/v1.0.1"><img alt="Release v1.0.1" src="https://img.shields.io/badge/release-v1.0.1-1DB954"></a>
   <img alt="macOS 13 or later" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"></a>
 </p>
@@ -20,11 +20,11 @@
 </p>
 
 <p align="center">
-  <sub>Actual SpotifyControl v1.0.0 interface — the liquid ribbon moves in a calm 2.1-second loop while music is playing.</sub>
+  <sub>Actual SpotifyControl v1.0.1 interface — the liquid ribbon moves in a calm 2.1-second loop while music is playing.</sub>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Unleash26/SpotifyControl/releases/tag/v1.0.0">Release notes</a>
+  <a href="https://github.com/Unleash26/SpotifyControl/releases/tag/v1.0.1">Release notes</a>
   ·
   <a href="#build-and-run">Build from source</a>
   ·
@@ -58,7 +58,7 @@ required.
 
 ## Actual interface
 
-![SpotifyControl v1.0.0 running with real track data](docs/screenshots/spotifycontrol-v1.png)
+![SpotifyControl v1.0.1 running with real track data](docs/screenshots/spotifycontrol-v1.png)
 
 The album artwork remains still. Only the elapsed portion of the timeline gently
 morphs while Spotify is playing; it is decorative motion rather than an audio
