@@ -6,6 +6,20 @@ struct OverlayView: View {
     @State private var isHovering = false
 
     var body: some View {
+        GeometryReader { geometry in
+            let scale = OverlaySizing.scale(for: geometry.size)
+
+            ZStack {
+                playerContent
+                    .scaleEffect(scale)
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+        .onHover { isHovering = $0 }
+        .preferredColorScheme(.dark)
+    }
+
+    private var playerContent: some View {
         ZStack {
             PlayerBackdrop(snapshot: model.snapshot)
                 .allowsHitTesting(false)
@@ -15,7 +29,7 @@ struct OverlayView: View {
                 onOpenAutomationSettings: model.openAutomationSettings,
                 onQuit: { NSApp.terminate(nil) }
             )
-            .frame(width: OverlayLayout.width, height: OverlayLayout.height)
+            .frame(width: OverlayLayout.windowWidth, height: OverlayLayout.windowHeight)
 
             VStack(alignment: .leading, spacing: 0) {
                 TrackMetadata(snapshot: model.snapshot)
@@ -49,8 +63,6 @@ struct OverlayView: View {
                 .animation(.easeOut(duration: 0.12), value: isHovering)
         }
         .frame(width: OverlayLayout.windowWidth, height: OverlayLayout.windowHeight)
-        .onHover { isHovering = $0 }
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -93,6 +105,7 @@ private struct PlaybackTimeline: View {
     @ObservedObject var model: PlayerModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorSchemeContrast) private var accessibilityContrast
+    @State private var showsKeyboardFocus = false
     @FocusState private var isTimelineFocused: Bool
 
     var body: some View {
@@ -121,7 +134,7 @@ private struct PlaybackTimeline: View {
                         showsThumb: canSeek
                     )
                     .contentShape(Rectangle())
-                    .gesture(
+                    .highPriorityGesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged {
                                 updatePosition(
@@ -132,6 +145,7 @@ private struct PlaybackTimeline: View {
                                 )
                             }
                             .onEnded {
+                                showsKeyboardFocus = false
                                 updatePosition(
                                     at: $0.location.x,
                                     width: geometry.size.width,
@@ -159,10 +173,10 @@ private struct PlaybackTimeline: View {
             }
             .opacity(canSeek ? 1 : 0.52)
             .allowsHitTesting(canSeek)
-            .focusable(canSeek)
+            .timelineKeyboardFocusable(canSeek)
             .focused($isTimelineFocused)
             .overlay {
-                if isTimelineFocused {
+                if isTimelineFocused && showsKeyboardFocus {
                     RoundedRectangle(cornerRadius: 7, style: .continuous)
                         .stroke(.white.opacity(0.86), lineWidth: 1.5)
                         .padding(-4)
@@ -170,6 +184,7 @@ private struct PlaybackTimeline: View {
             }
             .onMoveCommand { direction in
                 guard canSeek else { return }
+                showsKeyboardFocus = true
                 let step = max(5, duration * 0.01)
                 switch direction {
                 case .left, .down:
@@ -178,6 +193,11 @@ private struct PlaybackTimeline: View {
                     model.setPlaybackPosition(position + step, isEditing: false)
                 default:
                     break
+                }
+            }
+            .onChange(of: isTimelineFocused) { focused in
+                if !focused {
+                    showsKeyboardFocus = false
                 }
             }
             .accessibilityElement()
@@ -435,7 +455,6 @@ private struct PlayerBackdrop: View {
 
     var body: some View {
         ZStack {
-            VisualEffectBackground()
             fallback
 
             if let artworkURL = snapshot.artworkURL {
@@ -534,29 +553,6 @@ private struct QuitButton: View {
     }
 }
 
-private struct VisualEffectBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.blendingMode = .behindWindow
-        view.material = .underWindowBackground
-        view.state = .active
-        view.alphaValue = 0.88
-        view.wantsLayer = true
-        view.layer?.cornerRadius = OverlayLayout.cornerRadius
-        view.layer?.masksToBounds = true
-        return view
-    }
-
-    func updateNSView(_ view: NSVisualEffectView, context: Context) {
-        view.material = .underWindowBackground
-        view.blendingMode = .behindWindow
-        view.state = .active
-        view.alphaValue = 0.88
-        view.layer?.cornerRadius = OverlayLayout.cornerRadius
-        view.layer?.masksToBounds = true
-    }
-}
-
 private extension PlaybackState {
     var compactStatusLabel: String {
         switch self {
@@ -594,4 +590,18 @@ private extension Color {
     static let panelSecondaryText = Color.white.opacity(0.72)
     static let panelProgressActive = Color(red: 0.70, green: 0.81, blue: 0.95)
     static let panelProgressThumb = Color(red: 0.84, green: 0.90, blue: 0.99)
+}
+
+private extension View {
+    @ViewBuilder
+    func timelineKeyboardFocusable(_ isFocusable: Bool) -> some View {
+        if #available(macOS 14.0, *) {
+            focusable(isFocusable)
+                .focusEffectDisabled()
+        } else {
+            // Ventura keeps the native keyboard focus effect. The panel only
+            // becomes key when an actual input control needs it.
+            focusable(isFocusable)
+        }
+    }
 }

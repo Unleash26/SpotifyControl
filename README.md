@@ -23,6 +23,7 @@ no Spotify developer account or Web API credentials are required.
 - Static full-bleed album artwork with track, artist, and album information
 - Animated liquid-ribbon progress with elapsed time, duration, and seeking
 - Previous, play/pause, and next controls
+- Continuous bottom-right resizing from an unobtrusive 55% scale to 135%
 - Remembers the overlay position between launches
 - Prevents duplicate widget processes when launched repeatedly
 - Compact translucent macOS-native interface
@@ -70,6 +71,9 @@ macOS to request this permission again.
 
 - Drag the glass background to reposition the overlay.
 - Drag the liquid-ribbon timeline to seek within the current track.
+- Drag the small handle at the lower-right corner to resize the complete overlay
+  continuously. Its aspect ratio and top-left position stay fixed, and the exact
+  size is restored on the next launch.
 - Right-click for Spotify, Automation settings, and Quit actions.
 - Use the close button in the upper-right corner to quit.
 - If Spotify is closed, pressing Play launches it in the background and resumes

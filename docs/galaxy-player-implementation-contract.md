@@ -5,7 +5,9 @@
 - Composition source: `/var/folders/qk/q7mf_rz576n07ny_8tzd_fq80000gn/T/codex-clipboard-c297f173-d118-48ad-aae9-3360d98213b7.png`
 - Liquid-ribbon motion source: `/Users/yuyatakeda/Downloads/Screen_Recording_20260811_171935_One UI Home.mp4`
 - Product surface: the existing native macOS `OverlayView`
-- Target viewport: approximately `380 x 150 pt` inside the existing transparent shadow-padded panel
+- Target viewport: `380 x 150 pt` at 100% inside the transparent shadow-padded
+  panel; bottom-right dragging uniformly scales the full composition continuously
+  from 55% to 135%
 - Platform and theme: macOS 13 or later, dark appearance, always-on-top nonactivating panel
 - Reference state: Spotify is running and playing a track with title, artist, album, artwork, position, and duration available; the motion comparison is approximately `01:41 / 03:29`
 - Interaction state: pointer is not hovering a control and the seek bar is not being dragged

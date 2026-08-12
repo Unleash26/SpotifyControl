@@ -9,6 +9,7 @@ All notable changes to SpotifyControl are documented here.
 - Galaxy-inspired full-bleed artwork player with an animated liquid-ribbon timeline
 - Elapsed time, track duration, and drag-to-seek playback control
 - Smooth locally interpolated progress between Spotify refreshes
+- Continuous bottom-right resizing from 55% to 135%, with exact-size persistence
 
 ### Changed
 
@@ -21,6 +22,9 @@ All notable changes to SpotifyControl are documented here.
 
 - Kept resized saved frames fully inside the current display's visible bounds
 - Prevented failed or zero-duration refreshes during a drag from seeking to zero
+- Prevented pointer seeking or panel movement from leaving a focus rectangle
+  around the entire timeline while retaining keyboard focus feedback
+- Removed a one-pixel rectangular backdrop seam exposed by continuous scaling
 - Avoided transparent-panel damage during timeline updates by using a small
   synchronous Canvas
 
