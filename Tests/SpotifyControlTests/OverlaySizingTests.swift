@@ -37,7 +37,7 @@ final class OverlaySizingTests: XCTestCase {
         XCTAssertEqual(OverlaySizing.load(from: defaults), 1.2, accuracy: 0.000_001)
     }
 
-    func testBottomRightDragUsesDominantAxisAndPreservesBounds() {
+    func testBottomRightDragProjectsPointerMotionAndPreservesBounds() {
         let initialFrame = NSRect(x: 300, y: 400, width: 408, height: 178)
         let visibleFrame = NSRect(x: 0, y: 0, width: 1_200, height: 900)
 
@@ -56,6 +56,41 @@ final class OverlaySizingTests: XCTestCase {
             visibleFrame: visibleFrame
         )
         XCTAssertEqual(larger, 1.35, accuracy: 0.000_001)
+    }
+
+    func testBottomRightDragDoesNotJumpAcrossAxisDominanceBoundary() {
+        let initialFrame = NSRect(x: 300, y: 400, width: 408, height: 178)
+        let visibleFrame = NSRect(x: 0, y: 0, width: 2_000, height: 1_500)
+        let start = NSPoint(x: initialFrame.maxX, y: initialFrame.minY)
+        let targetScaleDelta: CGFloat = 0.2
+        let perpendicularNoise: CGFloat = 0.08
+        let baseDeltaX = OverlayLayout.windowWidth * targetScaleDelta
+        let baseDeltaY = -OverlayLayout.windowHeight * targetScaleDelta
+        let noiseX = OverlayLayout.windowHeight * perpendicularNoise
+        let noiseY = OverlayLayout.windowWidth * perpendicularNoise
+
+        let widthDominant = OverlaySizing.scaleForBottomRightDrag(
+            initialFrame: initialFrame,
+            startMouseLocation: start,
+            currentMouseLocation: NSPoint(
+                x: start.x + baseDeltaX + noiseX,
+                y: start.y + baseDeltaY + noiseY
+            ),
+            visibleFrame: visibleFrame
+        )
+        let heightDominant = OverlaySizing.scaleForBottomRightDrag(
+            initialFrame: initialFrame,
+            startMouseLocation: start,
+            currentMouseLocation: NSPoint(
+                x: start.x + baseDeltaX - noiseX,
+                y: start.y + baseDeltaY - noiseY
+            ),
+            visibleFrame: visibleFrame
+        )
+
+        XCTAssertEqual(widthDominant, 1.2, accuracy: 0.000_001)
+        XCTAssertEqual(heightDominant, 1.2, accuracy: 0.000_001)
+        XCTAssertEqual(widthDominant, heightDominant, accuracy: 0.000_001)
     }
 
     func testBottomRightDragStopsAtVisibleRightAndBottomEdges() {

@@ -73,16 +73,15 @@ enum OverlaySizing {
         visibleFrame: NSRect
     ) -> CGFloat {
         let initialScale = scale(for: initialFrame.size)
-        let widthScale = (
-            initialFrame.width + currentMouseLocation.x - startMouseLocation.x
-        ) / OverlayLayout.windowWidth
-        let heightScale = (
-            initialFrame.height - currentMouseLocation.y + startMouseLocation.y
-        ) / OverlayLayout.windowHeight
-
-        let proposedScale = abs(widthScale - initialScale) >= abs(heightScale - initialScale)
-            ? widthScale
-            : heightScale
+        let deltaX = currentMouseLocation.x - startMouseLocation.x
+        let deltaY = currentMouseLocation.y - startMouseLocation.y
+        let resizeWidth = OverlayLayout.windowWidth
+        let resizeHeight = OverlayLayout.windowHeight
+        let resizeVectorLengthSquared = resizeWidth * resizeWidth + resizeHeight * resizeHeight
+        let scaleDelta = (
+            deltaX * resizeWidth - deltaY * resizeHeight
+        ) / resizeVectorLengthSquared
+        let proposedScale = initialScale + scaleDelta
         let availableScale = min(
             (visibleFrame.maxX - initialFrame.minX) / OverlayLayout.windowWidth,
             (initialFrame.maxY - visibleFrame.minY) / OverlayLayout.windowHeight
